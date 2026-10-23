@@ -27,7 +27,13 @@ def user_context(db: Session, user: User) -> dict:
     weakest = sorted(turns, key=lambda t: sum(t.scores.values()))[:3]
     li = (profile.linkedin_review if profile else None) or {}
     return {
-        "candidate": {"name": user.name, "target_role": profile.target_role if profile else "", "level": profile.experience_level if profile else ""},
+        # Empty target_role/level = not set by the candidate: infer from what they entered below, don't assume.
+        "candidate": {"name": user.name, "target_role": (profile.target_role if profile else "") or "(not set)",
+                      "level": (profile.experience_level if profile else "") or "(not set)"},
+        # What they entered themselves: the richest signal for their direction and skills.
+        "resume_text": (profile.resume_text[:2500] if profile and profile.resume_text else None),
+        "linkedin_profile_text": (profile.linkedin_text[:3000] if profile and profile.linkedin_text else None),
+        "roles_practised": sorted({s.role for s in sessions}),
         "profile_review": {k: review.get(k) for k in ("role_fit", "strengths", "gaps", "red_flags")} if review else None,
         "interviews_done": len(sessions),
         "score_trend": [{"date": str(s.ended_at)[:10], "overall": (s.report or {}).get("overall")} for s in reversed(sessions)],

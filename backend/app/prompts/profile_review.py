@@ -17,4 +17,4 @@ Reply with one JSON object only, matching this shape:
 
 
 def user_prompt(*, resume: str, role: str, level: str, links: dict) -> str:
-    return f"Target role: {role or 'not set'}\nExperience level: {level or 'not set'}\nLinks: {links or 'none'}\n\nRESUME\n{resume[:12000]}"
+    return f"Target role: {role or 'not set (infer it from the resume)'}\nExperience level: {level or 'not set (infer it from the resume)'}\nLinks: {links or 'none'}\n\nRESUME\n{resume[:12000]}"

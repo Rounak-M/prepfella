@@ -62,6 +62,9 @@
 /* Page colour lives on <html>: the glow layer (body::before, z-index -1) must paint above it, not under body. */
 html {
   background: var(--bg);
+  /* Always reserve the scrollbar's width, so the centred layout (and the sidebar) doesn't jump between pages that
+     scroll and pages that don't (e.g. Advice). */
+  scrollbar-gutter: stable;
 }
 
 body {

@@ -49,11 +49,13 @@ def clear(user: User = Depends(current_user), db: Session = Depends(get_db)) -> 
 def chat(body: ChatIn, user: User = Depends(current_user), db: Session = Depends(get_db)) -> dict:
     history = _history(db, user, limit=8)
     ctx = user_context(db, user)
-    # Pick catalog candidates from the goal itself, recent turns and the profile (target role, resume gaps).
+    # Pick catalog candidates from the goal itself, recent turns and the profile (target role, practised roles, resume gaps).
+    role = ctx["candidate"]["target_role"]
     hints = " ".join([body.message, *[m.content for m in history if m.role == "user"][-3:],
-                      ctx["candidate"].get("target_role") or "", *((ctx.get("profile_review") or {}).get("gaps") or [])])
+                      role if role != "(not set)" else "", *ctx["roles_practised"],
+                      *((ctx.get("profile_review") or {}).get("gaps") or [])])
     convo = "\n".join(f"{'Candidate' if m.role == 'user' else 'Fella'}: {m.content}" for m in history)
-    prompt = (f"CANDIDATE DATA\n{json.dumps(ctx, default=str)[:6000]}\n\n"
+    prompt = (f"CANDIDATE DATA\n{json.dumps(ctx, default=str)[:12000]}\n\n"
               f"RESOURCE CATALOG (id | title | provider | type | tags)\n{advice.catalog_block(advice.candidates(hints))}\n\n"
               f"CONVERSATION SO FAR\n{convo or '(none)'}\n\nCandidate: {body.message}")
     try:

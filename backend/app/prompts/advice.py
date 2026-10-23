@@ -33,7 +33,9 @@ Rules:
   Prefer a mix of a course, a YouTube channel and hands-on practice. Never write a URL.
 - For a specific topic with no good catalog entry, cite a YouTube search as [[YT:precise search words]], e.g.
   [[YT:postgres indexing explained]]. Use these sparingly.
-- Tailor to their data (target role, level, gaps from their resume review, weakest interview area). Mention it briefly.
+- Tailor to their data (target role, level, skills and roles from their resume / LinkedIn text, gaps from their resume
+  review, weakest interview area). Mention it briefly. If target_role is "(not set)", infer their field from what they
+  entered; never assume a field their data doesn't show.
 - All resources must be free. Keep the whole reply under 300 words.
 - If the goal is unclear (e.g. just "hi"), ask one short question about their target role or topics instead of a plan.
 - For a follow-up question, answer it directly; only give a full roadmap when they ask for one or state a new goal."""

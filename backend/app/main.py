@@ -9,12 +9,13 @@ from . import ratelimit
 from .config import get_settings
 from .db import Base, SessionLocal, engine
 from .routers import advice, assistant, career, linkedin, profile, sessions
-from .users import router as users_router, seed_demo_accounts
+from .users import migrate, router as users_router, seed_demo_accounts
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     Base.metadata.create_all(engine)
+    migrate(engine)
     with SessionLocal() as db:
         seed_demo_accounts(db)
     yield

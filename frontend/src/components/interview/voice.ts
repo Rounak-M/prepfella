@@ -1,7 +1,9 @@
 // Interviewer voice: the backend's TTS audio, falling back to the browser's own speech when TTS is busy/slow.
 import { questionAudioUrl } from "@/lib/api";
 
-const TTS_TIMEOUT_MS = 2000;
+// The server starts the audio as soon as it writes the question (~1.5–2 s on NVIDIA), so this only trips when TTS is
+// really stuck; 2 s used to drop most fresh questions to the browser voice.
+const TTS_TIMEOUT_MS = 6000;
 
 export type Playback = { done: Promise<void>; stop: () => void };
 

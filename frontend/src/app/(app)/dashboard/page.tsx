@@ -42,11 +42,6 @@ export default function DashboardPage() {
   const entries = data?.entries ?? [];
   const roles = entries.filter((e) => e.kind !== "education");
   const latestPay = [...roles].reverse().find((e) => e.salary_yearly != null);
-  const firstPay = roles.find((e) => e.salary_yearly != null);
-  const growth =
-    latestPay && firstPay && firstPay !== latestPay
-      ? Math.round(((latestPay.salary_yearly! - firstPay.salary_yearly!) / firstPay.salary_yearly!) * 100)
-      : null;
   const hour = new Date().getHours();
 
   return (
@@ -59,7 +54,7 @@ export default function DashboardPage() {
             <h1 className="mt-1 text-3xl font-semibold">
               Hi, <span className="text-gradient">{user.name.split(" ")[0]}</span>
             </h1>
-            <p className="mt-2 max-w-md text-sm text-[var(--muted)]">{user.tagline}. Track how your career is moving and get ready for the next step.</p>
+            <p className="mt-2 max-w-md text-sm text-[var(--muted)]">{user.tagline ? `${user.tagline}. ` : ""}Track how your career is moving and get ready for the next step.</p>
           </div>
           <div className="grid grid-cols-2 gap-6 md:grid-cols-1">
             <Stat
@@ -71,8 +66,8 @@ export default function DashboardPage() {
             />
             <Stat
               icon={<TrendingUp size={18} />}
-              label={growth != null ? "Pay growth" : "Latest pay"}
-              value={growth != null ? `${growth > 0 ? "+" : ""}${growth}%` : latestPay ? formatSalary(latestPay)! : "—"}
+              label="Latest pay"
+              value={latestPay ? formatSalary(latestPay)! : "—"}
               tone="linear-gradient(135deg, #2fd6f0, #0a8fb0)"
             />
           </div>

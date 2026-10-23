@@ -63,7 +63,7 @@ Profile / Report / Fella ───────► /profile/review, /report, /ass
 | STT | Riva ASR on NVIDIA's hosted gRPC (`grpc.nvcf.nvidia.com:443`) | Parakeet CTC 0.6B; browser sends 16 kHz mono WAV |
 | TTS | Magpie TTS Multilingual, same gRPC host | Voice `Magpie-Multilingual.EN-US.Aria`; fallback = browser `speechSynthesis` |
 | DB | SQLite via SQLAlchemy (`backend/prepfella.db`, created on startup) | No Docker/server. Same models run on Postgres by changing `DATABASE_URL`. MVP retrieval = plain SQL (§4.5) |
-| Auth | **None.** Three seeded demo accounts; the login page is an account picker | Frontend stores the chosen id and sends `X-User-Id`; backend `users.current_user` dependency |
+| Auth | **Minimal.** Three passwordless team accounts on the picker, plus sign-up / sign-in with name + password (PBKDF2); new accounts land on `/welcome` | Frontend stores the account id and sends `X-User-Id`; backend `users.current_user` dependency (the password gates the login screen only) |
 | Charts | Recharts (frontend) | Report bars, dashboard trend, career graph |
 | Rate limits | `app/ratelimit.py` + `app/cache.py` | Per-API budget (36/min default), wait-then-retry, disk cache. See §7 |
 
@@ -115,7 +115,7 @@ codefest/
 ### 3.2 API
 | Method & path | Does |
 |---|---|
-| `GET /users`, `GET /me` | demo-account picker / current account. Every other route reads the `X-User-Id` header |
+| `GET /users`, `GET /me`, `POST /signup`, `POST /signin` | team-account picker / current account / name + password accounts. Every other route reads the `X-User-Id` header |
 | `POST /profile/resume` (multipart PDF) | PyMuPDF text extraction → `profiles.resume_text` |
 | `PUT /profile` | target role, level, links |
 | `POST /profile/review` | AI Profile Review (§4.1) → stored JSON |
@@ -243,7 +243,7 @@ Pages (App Router): `/` landing · `/login` (pick one of the demo accounts; no p
 Show the question as text too. Per-turn scores stay hidden until the report (like a real interview); a toggle can reveal them for the demo.
 
 **Audio utilities (`lib/audio.ts`):** record with `MediaRecorder`, decode with `AudioContext.decodeAudioData`, downmix to mono, resample to 16 kHz with `OfflineAudioContext`,
-encode 16-bit PCM WAV (≈40 lines). Playback: fetch WAV → `<audio>`; if the TTS request fails or takes > 2 s, speak with `window.speechSynthesis` instead.
+encode 16-bit PCM WAV (≈40 lines). Playback: fetch WAV → `<audio>`; if the TTS request fails or takes > 6 s (the backend prefetches each question's audio as soon as it is written), speak with `window.speechSynthesis` instead.
 
 **Design — decided: iOS-style "liquid glass" tiles in a light Miami purple, light + dark.** (Started from a neumorphism
 reference on Pinterest; replaced at the user's request.) Tiles are translucent purple glass (`--glass-tint`, tuned per mode so
@@ -286,27 +286,28 @@ Each phase ends with something demo-able. Owners are a **suggestion** — swap f
 - **Done when:** smoke test all PASS, `GET /health` shows models + speech configured, Next.js dev server runs.
 
 ### Phase 1 — core loop, text mode (owner: Rounak backend · Jaron frontend)
-- [x] `db.py`, `models.py`, create tables on startup; demo accounts seeded on startup (`users.py`, no auth).
+- [x] `db.py`, `models.py`, create tables on startup; team accounts created on startup (`users.py`, no auth).
 - [x] `POST /sessions` → first question (LLM, fallback bank on failure).
 - [x] `POST /sessions/{id}/answer` (text) → §4.2 evaluation → §4.3 decision → next question; persist turns.
 - [x] `POST /sessions/{id}/finish` → §4.4 report.
 - [x] Frontend: account picker, theme toggle, app shell.
+- [x] Sign-up / sign-in (name, password, confirm) and the `/welcome` onboarding page: target, LinkedIn link/PDF import, resume, manual career entries.
 - [x] Frontend: setup wizard, text interview room, report page with Recharts bars.
 - **Done when:** a full 4-question text interview produces a stored report on screen.
 
 ### Phase 2 — intelligence (owner: Manjunath voice · Rounak AI · Jaron UI)
 - [x] Voice: `lib/audio.ts` WAV capture → `/answer` with audio → `speech.transcribe`; question audio via `speech.synthesize` (cache WAVs on disk by turn).
-- [x] Browser `speechSynthesis` fallback + 2 s timeout.
+- [x] Browser `speechSynthesis` fallback + 6 s timeout (was 2 s, which dropped most fresh questions to the browser voice); TTS prefetched when a question is created.
 - [x] Resume upload + AI Profile Review page; feed `resume_claims` and `interview_plan` into sessions.
 - [x] Adaptive engine visible: label each question "follow-up" / "harder" / "verifying your resume".
 - [x] Fella drawer + `/assistant/chat` with SQL-assembled context.
 - [x] LinkedIn profile review (§4.7) — backend + `/linkedin` page.
-- [x] Career graph (§4.8) — backend, LinkedIn import, dashboard chart with salary line; seeded for Jaron and Rounak.
+- [x] Career graph (§4.8) — backend, LinkedIn import, dashboard chart with salary line.
 - **Done when:** the demo story (§1) runs end to end by voice.
 
 ### Phase 3 — polish and demo (everyone)
 - [x] Dashboard + `/progress` trend chart; study plan from `next_session` + gaps.
-- [x] Demo seed for Jaron (`app/demo_data.py`, on account creation): resume, reviewed profile, 2 past sessions 47 → 72, Fella greeting.
+- [x] ~~Demo seed for Jaron~~ removed 2026-10-23 at the team's request: no template data; the demo uses each person's real entries.
 - [ ] Pre-generate and cache audio for the scripted demo questions (no network dependency mid-demo).
 - [ ] Final UI design pass (§5); empty/loading/error states; mobile check.
 - [ ] Rehearse the 3-minute demo twice; record a backup screen capture.
@@ -322,7 +323,7 @@ pgvector retrieval for Fella (move to Postgres) · real sign-in · streaming ASR
 |---|---|
 | Free tier ≈40 req/min **per API**, limited credits | `ratelimit.py`: per model / speech-function budget of `NVIDIA_RPM_LIMIT` (36), calls wait for a slot (LLM ≤25 s, ASR ≤20 s, TTS ≤3 s then browser TTS) and 503 `busy` beyond that; 429/5xx retried with backoff; OpenAI client retries off so every attempt counts. `cache.py`: identical LLM calls and TTS text are served from `backend/tmp/cache` (rehearsals cost nothing). One uvicorn worker only. `/health` shows budget use |
 | Nemotron 3.x reasons by default and returns empty content (`finish=length`) | `chat_json` sends `chat_template_kwargs.enable_thinking=false` (≈9 s vs 35 s+). `/no_think` and `reasoning_effort` do not work |
-| Throttling / slow hosted TTS during the live demo | 2 s timeout → `speechSynthesis`; pre-cached demo audio |
+| Throttling / slow hosted TTS during the live demo | TTS prefetch + 6 s timeout → `speechSynthesis`; pre-cached demo audio |
 | LLM returns bad JSON or slow reasoning | `parse_json` + one retry + fallback bank; no-reasoning switch; tight `max_tokens` |
 | ASR mishears accents | Show transcript, allow "edit and resend" in text |
 | Function IDs / model IDs change | All in `.env`; smoke test catches it in seconds |

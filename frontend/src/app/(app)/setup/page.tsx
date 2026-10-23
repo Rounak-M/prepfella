@@ -64,6 +64,10 @@ function SetupWizard() {
 
   async function start(e: FormEvent) {
     e.preventDefault();
+    if (form.role.trim().length < 2) {
+      setError("Type the role you're practising for, e.g. Backend Engineer.");
+      return;
+    }
     setStarting(true);
     setError(null);
     try {
@@ -115,7 +119,9 @@ function SetupWizard() {
         <section className="neu grid gap-6 rounded-[28px] p-5 sm:p-6 md:grid-cols-2">
           <label className="md:col-span-2">
             <span className="label">Role</span>
-            <input className="field" required minLength={2} list="role-suggestions" value={form.role} placeholder="Backend Engineer"
+            <input className="field" required minLength={2} list="role-suggestions" value={form.role} placeholder="Type a role, e.g. Backend Engineer"
+              onInvalid={(e) => e.currentTarget.setCustomValidity(form.role.trim() ? "" : "Type the role you're practising for")}
+              onInput={(e) => e.currentTarget.setCustomValidity("")}
               onChange={(e) => set("role", e.target.value)} />
             <datalist id="role-suggestions">
               {ROLE_SUGGESTIONS.map((r) => <option key={r} value={r} />)}
@@ -184,7 +190,8 @@ function SetupWizard() {
         {error && <p className="neu-inset rounded-2xl px-4 py-3 text-sm text-[var(--danger)]">{error}</p>}
         <div className="flex flex-wrap items-center justify-end gap-3">
           {form.mode === "voice" && <p className="text-xs text-[var(--muted)]">Your browser will ask for the microphone when you answer.</p>}
-          <button type="submit" disabled={form.role.trim().length < 2} className="btn-primary flex items-center gap-2 rounded-2xl px-7 py-3 font-medium">
+          {/* Never disabled: an empty role (new accounts have no target yet) gets the browser's "fill this in" prompt on the field instead of a dead button */}
+          <button type="submit" className="btn-primary flex items-center gap-2 rounded-2xl px-7 py-3 font-medium">
             <Sparkles size={16} /> Start interview
           </button>
         </div>

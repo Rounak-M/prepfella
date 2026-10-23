@@ -127,6 +127,8 @@ def create_session(body: SessionIn, user: User = Depends(current_user), db: Sess
              question=first["question"].strip(), difficulty=diff, decision={"asked_as": "Opening question"})
     db.add(t)
     db.commit()
+    if s.mode == "voice":
+        speech.prefetch(t.question)
     return session_out(s, [t])
 
 
@@ -244,6 +246,8 @@ def answer(session_id: int, text: str = Form(""), seconds: float | None = Form(N
                    decision={"asked_as": decision["label"], "because": decision["reason"]})
         db.add(nxt)
     db.commit()
+    if nxt and s.mode == "voice":
+        speech.prefetch(nxt.question)
     return {"transcript": text, "evaluation": turn_out(current), "next": turn_out(nxt) if nxt else None, "done": done}
 
 

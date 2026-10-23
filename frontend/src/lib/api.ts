@@ -43,7 +43,7 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
 
 // --- Types mirroring the backend responses
 
-export type User = { id: number; name: string; email: string; tagline: string };
+export type User = { id: number; name: string; email: string; tagline: string; has_password: boolean };
 
 export type CareerKind = "job" | "internship" | "education";
 export type CareerEntry = {

@@ -25,12 +25,14 @@ class UTCDateTime(TypeDecorator):
 
 
 class User(Base):
-    """Demo accounts only; no passwords. The frontend picks one and sends its id as X-User-Id."""
+    """Team accounts have no password (picked from a list); accounts made through sign-up have one.
+    Either way the frontend then sends the id as X-User-Id."""
     __tablename__ = "users"
     id: Mapped[int] = mapped_column(primary_key=True)
     email: Mapped[str] = mapped_column(String(200), unique=True)
     name: Mapped[str] = mapped_column(String(100))
-    tagline: Mapped[str] = mapped_column(String(200), default="")  # shown on the account picker
+    tagline: Mapped[str] = mapped_column(String(200), default="")  # unused (API derives it from the profile); kept for existing DBs
+    password_hash: Mapped[str | None] = mapped_column(String(200))  # "pbkdf2$<iterations>$<salt hex>$<hash hex>"; None = team account
     created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=_now)
 
 

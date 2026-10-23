@@ -2,7 +2,7 @@
 # Ctrl+C (or closing the window) stops both. On Rounak's laptop "run prep" (~\.local\bin\run.cmd) calls this.
 #   run prep          dev mode (pages compile on first visit)        also: .\start
 #   run prep -Prod    production build: faster pages, no Next.js dev badge. Use this for the demo.
-#   run prep -Reset   delete backend\prepfella.db first, so the demo accounts are reseeded fresh
+#   run prep -Reset   DELETE ALL DATA (backend\prepfella.db) first; the 3 accounts come back empty
 param([switch]$Prod, [switch]$Reset)
 $ErrorActionPreference = "Stop"
 $root = $PSScriptRoot
@@ -37,7 +37,7 @@ if ($busy.Count) { throw "Port $($busy -join ' and ') already in use. Close what
 
 if ($Reset) {
   Remove-Item (Join-Path $root "backend\prepfella.db") -ErrorAction SilentlyContinue
-  Write-Host "Demo data reset: accounts will be reseeded." -ForegroundColor Yellow
+  Write-Host "All data deleted: the 3 accounts start empty." -ForegroundColor Yellow
 }
 if (-not (Test-Path $next)) {
   Write-Host "Installing frontend packages..." -ForegroundColor Cyan

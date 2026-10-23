@@ -1,58 +1,62 @@
-"""No auth: a fixed set of demo accounts. The frontend shows a picker and sends X-User-Id on every request."""
+"""Accounts. The team's accounts have no password and are picked from a list; anyone else signs up with a name and a
+password and signs in with them. After that the frontend sends X-User-Id on every request (no tokens: hackathon scope)."""
+import hashlib
+import hmac
+import secrets
+import uuid
+
 from fastapi import APIRouter, Depends, Header, HTTPException
-from sqlalchemy import select
+from pydantic import BaseModel, Field
+from sqlalchemy import Engine, func, inspect, select, text
 from sqlalchemy.orm import Session
 
-from . import demo_data
 from .db import get_db
-from .models import CareerEntry, Profile, User
+from .models import Profile, User
 
-# The team. Jaron is the main demo user (resume, review and two past interviews from demo_data.py);
-# Manjunath starts empty so the onboarding flow can be shown.
+# The team. Accounts start empty: everything the AI knows about a person comes from what they enter (profile, resume,
+# LinkedIn, career entries, interviews), never from made-up seed data.
 DEMO_ACCOUNTS = [
-    {"email": "jaron@demo.prepfella", "name": "Jaron D", "tagline": "Backend Engineer · Fresher",
-     "target_role": "Backend Engineer", "experience_level": "Fresher"},
-    {"email": "rounak@demo.prepfella", "name": "Rounak M", "tagline": "Cybersecurity Specialist · 1–2 years",
-     "target_role": "Cybersecurity Specialist", "experience_level": "Junior"},
-    {"email": "manjunath@demo.prepfella", "name": "Manjunath M", "tagline": "Intern · no interviews yet",
-     "target_role": "", "experience_level": "Intern"},
+    {"email": "jaron@demo.prepfella", "name": "Jaron D"},
+    {"email": "rounak@demo.prepfella", "name": "Rounak M"},
+    {"email": "manjunath@demo.prepfella", "name": "Manjunath M"},
 ]
+PBKDF2_ITERATIONS = 200_000
+MIN_PASSWORD = 6
 
-# Career-graph demo data (made up). (kind, title, organization, start, end, level, salary, salary_period)
-# Jaron's dip (TA after freelancing) shows the graph's "downs".
-DEMO_CAREER = {
-    "jaron@demo.prepfella": [
-        ("education", "BCA, Computer Applications", "KLE Technological University", "2024-08", "2027-05", 0, None, "year"),
-        ("internship", "Web Development Intern", "PixelCraft Studio", "2025-05", "2025-07", 1, 8000, "month"),
-        ("job", "Freelance Web Developer", "Self-employed", "2025-08", "2025-12", 2, 240000, "year"),
-        ("job", "Teaching Assistant", "KLE Technological University", "2026-01", "2026-04", 0, 5000, "month"),
-        ("internship", "Backend Engineering Intern", "Finlytics", "2026-05", None, 1, 25000, "month"),
-    ],
-    "rounak@demo.prepfella": [
-        ("education", "BCA, Computer Applications", "KLE Technological University", "2021-08", "2024-05", 0, None, "year"),
-        ("internship", "SOC Analyst Intern", "SecureNet Labs", "2023-06", "2023-12", 1, 12000, "month"),
-        ("job", "Security Analyst", "SecureNet Labs", "2024-06", "2025-03", 2, 450000, "year"),
-        ("job", "Cybersecurity Specialist", "Quantiva Systems", "2025-04", None, 3, 720000, "year"),
-    ],
-}
+
+def migrate(engine: Engine) -> None:
+    """create_all doesn't add columns to existing tables; add the ones that came later."""
+    if "password_hash" not in {c["name"] for c in inspect(engine).get_columns("users")}:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE users ADD COLUMN password_hash VARCHAR(200)"))
 
 
 def seed_demo_accounts(db: Session) -> None:
-    """Create any missing demo account (with its career entries). Safe to run on every startup."""
+    """Create any missing demo account with an empty profile. Safe to run on every startup."""
     existing = set(db.scalars(select(User.email)))
     for a in DEMO_ACCOUNTS:
         if a["email"] in existing:
             continue
-        user = User(email=a["email"], name=a["name"], tagline=a["tagline"])
+        user = User(email=a["email"], name=a["name"])
         db.add(user)
         db.flush()
-        db.add(Profile(user_id=user.id, target_role=a["target_role"], experience_level=a["experience_level"]))
-        for kind, title, org, start, end, level, salary, period in DEMO_CAREER.get(a["email"], []):
-            db.add(CareerEntry(user_id=user.id, kind=kind, title=title, organization=org, start=start, end=end,
-                               level=level, salary=salary, salary_period=period))
-        if a["email"] == "jaron@demo.prepfella":
-            demo_data.seed_jaron(db, user.id)
+        db.add(Profile(user_id=user.id))
     db.commit()
+
+
+def hash_password(password: str) -> str:
+    salt = secrets.token_bytes(16)
+    digest = hashlib.pbkdf2_hmac("sha256", password.encode(), salt, PBKDF2_ITERATIONS)
+    return f"pbkdf2${PBKDF2_ITERATIONS}${salt.hex()}${digest.hex()}"
+
+
+def check_password(password: str, stored: str | None) -> bool:
+    try:
+        _, iterations, salt, digest = (stored or "").split("$")
+        got = hashlib.pbkdf2_hmac("sha256", password.encode(), bytes.fromhex(salt), int(iterations))
+    except ValueError:
+        return False
+    return hmac.compare_digest(got.hex(), digest)
 
 
 def current_user(x_user_id: int = Header(...), db: Session = Depends(get_db)) -> User:
@@ -62,19 +66,62 @@ def current_user(x_user_id: int = Header(...), db: Session = Depends(get_db)) ->
     return user
 
 
-def _out(u: User) -> dict:
-    return {"id": u.id, "name": u.name, "email": u.email, "tagline": u.tagline}
+def _out(u: User, db: Session) -> dict:
+    p = db.get(Profile, u.id)
+    # From what the user saved on their profile (e.g. "Backend Engineer · Fresher"); empty until they set it.
+    tagline = " · ".join(x for x in (p.target_role, p.experience_level) if x) if p else ""
+    return {"id": u.id, "name": u.name, "email": u.email, "tagline": tagline, "has_password": u.password_hash is not None}
+
+
+def _by_name(db: Session, name: str) -> User | None:
+    return db.scalar(select(User).where(func.lower(User.name) == name.lower()))
 
 
 router = APIRouter(tags=["users"])
 
 
+class SignUpIn(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    password: str = Field(max_length=200)
+
+
+class SignInIn(BaseModel):
+    name: str = Field(max_length=100)
+    password: str = Field(max_length=200)
+
+
 @router.get("/users")
 def list_users(db: Session = Depends(get_db)) -> list[dict]:
-    """Accounts for the login picker."""
-    return [_out(u) for u in db.scalars(select(User).order_by(User.id))]
+    """Every account, for the login picker. Ones with a password (has_password) ask for it before signing in."""
+    return [_out(u, db) for u in db.scalars(select(User).order_by(User.id))]
+
+
+@router.post("/signup")
+def sign_up(body: SignUpIn, db: Session = Depends(get_db)) -> dict:
+    """New account with an empty profile; the frontend then sends the user to /welcome to fill it."""
+    name = " ".join(body.name.split())
+    if not name:
+        raise HTTPException(422, "Enter your name")
+    if len(body.password) < MIN_PASSWORD:
+        raise HTTPException(422, f"Use at least {MIN_PASSWORD} characters for the password")
+    if _by_name(db, name):  # names are the sign-in handle, so they must be unique
+        raise HTTPException(409, "That name is taken; add a surname or initial")
+    user = User(email=f"{uuid.uuid4().hex[:12]}@user.prepfella", name=name, password_hash=hash_password(body.password))
+    db.add(user)
+    db.flush()
+    db.add(Profile(user_id=user.id, links={}))
+    db.commit()
+    return _out(user, db)
+
+
+@router.post("/signin")
+def sign_in(body: SignInIn, db: Session = Depends(get_db)) -> dict:
+    user = _by_name(db, " ".join(body.name.split()))
+    if user is None or not check_password(body.password, user.password_hash):
+        raise HTTPException(401, "Wrong name or password")
+    return _out(user, db)
 
 
 @router.get("/me")
-def me(user: User = Depends(current_user)) -> dict:
-    return _out(user)
+def me(user: User = Depends(current_user), db: Session = Depends(get_db)) -> dict:
+    return _out(user, db)
