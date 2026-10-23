@@ -1,0 +1,9 @@
+fastapi>=0.115
+uvicorn[standard]>=0.30
+python-dotenv>=1.0
+python-multipart>=0.0.9
+openai>=1.40
+nvidia-riva-client>=2.17
+pymupdf>=1.24
+sqlalchemy>=2.0
+pytest>=8

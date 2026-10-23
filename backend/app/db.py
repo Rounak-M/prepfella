@@ -1,0 +1,21 @@
+"""SQLAlchemy engine and session. SQLite file by default; Postgres works by changing DATABASE_URL."""
+from collections.abc import Iterator
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
+
+from .config import get_settings
+
+_url = get_settings().database_url
+# FastAPI runs sync endpoints in a thread pool; SQLite refuses cross-thread use unless told otherwise.
+engine = create_engine(_url, connect_args={"check_same_thread": False} if _url.startswith("sqlite") else {})
+SessionLocal = sessionmaker(engine, expire_on_commit=False)
+
+
+class Base(DeclarativeBase):
+    pass
+
+
+def get_db() -> Iterator[Session]:
+    with SessionLocal() as db:
+        yield db

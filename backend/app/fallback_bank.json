@@ -1,0 +1,41 @@
+{
+  "_comment": "Used only when the LLM fails, so an interview never dead-ends. Keys: lower-case role keywords, 'default', 'hr'.",
+  "backend": [
+    {"topic": "APIs", "question": "How would you design a REST API for a simple to-do app? Walk me through the endpoints."},
+    {"topic": "Databases", "question": "What is a database index, and when would adding one make things slower?"},
+    {"topic": "Caching", "question": "When would you add a cache in front of a database, and what can go wrong?"},
+    {"topic": "Concurrency", "question": "Two users update the same record at once. How do you stop one change from being lost?"},
+    {"topic": "Debugging", "question": "An API endpoint suddenly got ten times slower. How do you find out why?"}
+  ],
+  "frontend": [
+    {"topic": "React state", "question": "When would you lift state up versus use a global store in a React app?"},
+    {"topic": "Performance", "question": "A page feels slow to load. What would you measure first, and what would you change?"},
+    {"topic": "Accessibility", "question": "How do you make a custom dropdown usable with a keyboard and a screen reader?"},
+    {"topic": "CSS layout", "question": "Explain how you would build a responsive two-column layout that stacks on phones."}
+  ],
+  "data": [
+    {"topic": "SQL", "question": "How would you find the top three customers by revenue in each region using SQL?"},
+    {"topic": "Statistics", "question": "What is the difference between correlation and causation? Give an example from business data."},
+    {"topic": "Data cleaning", "question": "You receive a dataset with missing values and duplicates. What are your first steps?"},
+    {"topic": "Dashboards", "question": "How do you decide which metrics belong on a dashboard for a sales team?"}
+  ],
+  "security": [
+    {"topic": "Web security", "question": "Explain SQL injection and how you would prevent it in an application."},
+    {"topic": "Incident response", "question": "An alert shows unusual logins from another country. What do you do in the first hour?"},
+    {"topic": "Networking", "question": "What happens during a TLS handshake, and what does it protect against?"},
+    {"topic": "Threat modelling", "question": "How would you threat-model a new login page before it goes live?"}
+  ],
+  "default": [
+    {"topic": "Problem solving", "question": "Tell me about a technical problem you solved recently. How did you approach it?"},
+    {"topic": "Fundamentals", "question": "Explain the difference between a process and a thread, with an example."},
+    {"topic": "Data structures", "question": "When would you use a hash map instead of a list, and what does it cost you?"},
+    {"topic": "Projects", "question": "Walk me through the project you are proudest of. What was your part in it?"}
+  ],
+  "hr": [
+    {"topic": "Introduction", "question": "Tell me about yourself and why you are interested in this role."},
+    {"topic": "Teamwork (STAR)", "question": "Tell me about a time you disagreed with a teammate. What happened and what did you do?"},
+    {"topic": "Failure (STAR)", "question": "Describe a time something you worked on failed. What did you learn?"},
+    {"topic": "Pressure (STAR)", "question": "Tell me about a time you had to deliver under a tight deadline."},
+    {"topic": "Motivation", "question": "Where do you see yourself in two years, and how does this role help you get there?"}
+  ]
+}

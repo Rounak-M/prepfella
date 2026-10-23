@@ -1,0 +1,12 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+backend/tmp/
+backend/*.db
+node_modules/
+.next/
+out/
+design-tools/node_modules/
+~$*.pptx
+.DS_Store

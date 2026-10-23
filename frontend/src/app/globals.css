@@ -1,0 +1,403 @@
+@import "tailwindcss";
+
+/* PrepFella theme: "liquid glass" tiles in a light Miami purple, identical in light and dark mode.
+   Only the page changes: white in light mode, AMOLED black in dark mode. Each tile re-declares the colour tokens for
+   its own content (white text, light chart colours, pink accents), so components just use var(--fg) etc. and stay
+   readable whether they sit on the page or on a tile. */
+
+:root,
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #ffffff;
+  --surface: var(--bg); /* solid fill behind small marks (chart dots); a tile sets its own */
+  --fg: #1b1840;
+  --muted: #6a6690;
+  --track: #e6e1f5;
+  --overlay: rgb(27 24 64 / 0.38);
+
+  --primary: #7c3aed;
+  --primary-from: #9f6bff;
+  --primary-to: #6d35e0;
+  --primary-gradient: linear-gradient(135deg, #a06cff 0%, #7c4ef0 55%, #6a3be0 100%);
+  --accent-pink: #e8329c;
+  --accent-cyan: #0aa5c6;
+  --success: #12a37e;
+  --danger: #d63c5e;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #000000; /* AMOLED black */
+  --surface: var(--bg);
+  --fg: #ecebfa;
+  --muted: #a5a2cc;
+  --track: #2a2a4a;
+  --overlay: rgb(0 0 0 / 0.7);
+
+  --primary: #b58cff;
+  --primary-from: #b58cff;
+  --primary-to: #8a5cf6;
+  --primary-gradient: linear-gradient(135deg, #a06cff 0%, #7c4ef0 55%, #6a3be0 100%);
+  --accent-pink: #ff5cbf;
+  --accent-cyan: #2fd6f0;
+  --success: #34d8ac;
+  --danger: #ff6b8b;
+}
+
+@theme inline {
+  --font-sans: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-primary: var(--primary);
+  --color-pink: var(--accent-pink);
+  --color-cyan: var(--accent-cyan);
+  --color-success: var(--success);
+  --color-danger: var(--danger);
+}
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* Page colour lives on <html>: the glow layer (body::before, z-index -1) must paint above it, not under body. */
+html {
+  background: var(--bg);
+}
+
+body {
+  color: var(--fg);
+  font-family: var(--font-sans);
+}
+
+/* Ambient light behind the glass. Liquid glass needs something to bend: a few large, soft, slowly drifting glows.
+   The page still reads white (light) or black (dark); the glows mostly show through the tiles. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: -15vmax;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(32vmax 32vmax at 18% 22%, var(--orb-1), transparent 70%),
+    radial-gradient(28vmax 28vmax at 82% 18%, var(--orb-2), transparent 70%),
+    radial-gradient(34vmax 34vmax at 70% 85%, var(--orb-3), transparent 70%),
+    radial-gradient(26vmax 26vmax at 25% 88%, var(--orb-2), transparent 70%);
+  filter: blur(20px);
+  animation: drift 38s ease-in-out infinite alternate;
+}
+:root,
+:root[data-theme="light"] {
+  --orb-1: rgb(160 110 255 / 0.55);
+  --orb-2: rgb(255 92 191 / 0.4);
+  --orb-3: rgb(47 214 240 / 0.38);
+  --glass-tint: rgb(104 56 228 / 0.5); /* over white: see-through, picks up the glows */
+}
+:root[data-theme="dark"] {
+  --orb-1: rgb(150 90 255 / 0.6);
+  --orb-2: rgb(255 70 180 / 0.42);
+  --orb-3: rgb(30 200 235 / 0.36);
+  --glass-tint: rgb(150 110 255 / 0.56); /* over black: lighter tint so tiles stay close to light mode */
+}
+@keyframes drift {
+  0% { transform: translate3d(0, 0, 0) rotate(0deg); }
+  50% { transform: translate3d(3vmax, -2vmax, 0) rotate(8deg); }
+  100% { transform: translate3d(-2vmax, 2vmax, 0) rotate(-6deg); }
+}
+
+/* iOS-style liquid glass tile (cards, panels, modals, tooltips): translucent tint with heavy blur + saturation,
+   a bright specular rim (strongest top-left, catching again bottom-right) and a soft inner lens glow. */
+@utility neu {
+  --surface: #7c4ef0;
+  --fg: #ffffff;
+  --muted: rgb(255 255 255 / 0.88);
+  --track: rgb(255 255 255 / 0.24);
+  --primary: #ffffff;
+  --primary-from: #ffffff;
+  --primary-to: #f0e4ff;
+  --primary-gradient: linear-gradient(135deg, #ff5cbf 0%, #d63cf0 100%); /* Miami pink: stands out on purple */
+  --accent-pink: #ffb0e3;
+  --accent-cyan: #9cf0ff;
+  --success: #8ff5cf;
+  --danger: #ffc2cf;
+  --overlay: rgb(0 0 0 / 0.3);
+  color: var(--fg);
+  text-shadow: 0 1px 2px rgb(40 10 110 / 0.22); /* keeps white text crisp on see-through glass */
+  background:
+    radial-gradient(120% 80% at 0% 0%, rgb(255 255 255 / 0.32), rgb(255 255 255 / 0) 55%),
+    radial-gradient(90% 70% at 100% 100%, rgb(255 255 255 / 0.12), rgb(255 255 255 / 0) 60%),
+    var(--glass-tint);
+  border: 1px solid rgb(255 255 255 / 0.28);
+  box-shadow:
+    inset 1.5px 1.5px 0 rgb(255 255 255 / 0.85),
+    inset -1px -1px 0 rgb(255 255 255 / 0.4),
+    inset 6px 6px 14px -6px rgb(255 255 255 / 0.45),
+    inset -8px -8px 18px -8px rgb(255 255 255 / 0.22),
+    inset 0 0 24px rgb(255 255 255 / 0.08),
+    0 12px 32px -12px rgb(60 20 140 / 0.45);
+  backdrop-filter: blur(22px) saturate(200%) brightness(1.04);
+  -webkit-backdrop-filter: blur(22px) saturate(200%) brightness(1.04);
+}
+
+/* Well inside a tile (inputs, active nav, ring track): a recessed, darker pane of glass */
+@utility neu-inset {
+  background: rgb(30 8 80 / 0.22);
+  border: 1px solid rgb(255 255 255 / 0.14);
+  box-shadow: inset 1px 1px 3px rgb(20 5 60 / 0.3), inset -1px -1px 0 rgb(255 255 255 / 0.18);
+}
+
+/* Small control. On the page it is a glass pebble; inside a tile it becomes clear white glass. */
+@utility neu-btn {
+  --fg: #ffffff;
+  --muted: rgb(255 255 255 / 0.85);
+  --primary: #ffffff;
+  color: var(--fg);
+  background:
+    radial-gradient(120% 90% at 20% 0%, rgb(255 255 255 / 0.4), rgb(255 255 255 / 0) 60%),
+    var(--glass-tint);
+  border: 1px solid rgb(255 255 255 / 0.3);
+  box-shadow:
+    inset 1.5px 1.5px 0 rgb(255 255 255 / 0.85),
+    inset -1px -1px 0 rgb(255 255 255 / 0.35),
+    inset 4px 4px 10px -4px rgb(255 255 255 / 0.4),
+    0 6px 16px -8px rgb(60 20 140 / 0.5);
+  backdrop-filter: blur(20px) saturate(190%);
+  -webkit-backdrop-filter: blur(20px) saturate(190%);
+  transition: background-color 150ms ease, transform 150ms ease, filter 150ms ease;
+  &:hover {
+    filter: brightness(1.08);
+  }
+  &:active {
+    transform: scale(0.97);
+  }
+}
+
+@utility btn-primary {
+  background: var(--primary-gradient);
+  color: #fff;
+  border: 1px solid rgb(255 255 255 / 0.3);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.4), 0 6px 16px -8px rgb(124 58 237 / 0.7);
+  transition: filter 150ms ease, transform 150ms ease;
+  &:hover {
+    filter: brightness(1.08);
+  }
+  &:active {
+    transform: translateY(1px);
+  }
+  &:disabled {
+    filter: grayscale(0.4) brightness(0.9);
+    cursor: not-allowed;
+  }
+}
+
+@utility text-gradient {
+  background: linear-gradient(90deg, var(--primary-from), var(--accent-pink));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Inputs: frosted wells with a focus ring */
+@layer components {
+  .field {
+    @apply neu-inset w-full rounded-2xl px-4 py-3 text-sm outline-none placeholder:text-[var(--muted)];
+    color: var(--fg);
+  }
+  .field:focus-visible {
+    box-shadow: inset 0 1px 3px rgb(20 5 60 / 0.25), 0 0 0 2px var(--primary);
+  }
+  /* native dropdown lists render outside the tile, on the OS surface */
+  .field option {
+    color: #1b1840;
+    background: #fff;
+  }
+  .label {
+    @apply mb-1.5 block text-xs font-medium tracking-wide text-[var(--muted)] uppercase;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Logo swap without JS */
+:root[data-theme="dark"] .theme-light-only,
+:root:not([data-theme="dark"]) .theme-dark-only {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0ms !important;
+    animation-duration: 0ms !important;
+  }
+}
+
+/* A control inside a tile is frosted white glass, not a second purple tile. Unlayered so it beats the utilities. */
+.neu .neu-btn {
+  background: radial-gradient(120% 90% at 20% 0%, rgb(255 255 255 / 0.3), rgb(255 255 255 / 0.08) 70%);
+  box-shadow: inset 1px 1px 0 rgb(255 255 255 / 0.7), inset -1px -1px 0 rgb(255 255 255 / 0.2);
+  backdrop-filter: none;
+}
+.neu .neu-btn:hover {
+  background: rgb(255 255 255 / 0.24);
+  filter: none;
+}
+
+/* Gradient text on see-through glass: light gradient + a soft shadow so it never washes out on a pale backdrop */
+.neu .text-gradient {
+  background: linear-gradient(90deg, #ffffff 0%, #ffc8ee 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  filter: drop-shadow(0 1px 2px rgb(40 10 110 / 0.4));
+}
+
+/* Light mode: dark ink on the glass (the tiles themselves stay the same purple glass). Unlayered, so it beats the
+   tokens each tile utility declares. */
+:root:not([data-theme="dark"]) .neu,
+:root:not([data-theme="dark"]) .neu-btn {
+  --fg: #12102a;
+  --muted: rgb(18 16 42 / 0.68);
+  --track: rgb(18 16 42 / 0.12);
+  --primary: #4c1d95;
+  --primary-from: #6d28d9;
+  --primary-to: #4338ca;
+  --accent-pink: #be185d;
+  --accent-cyan: #0e7490;
+  --success: #047857;
+  --danger: #be123c;
+  text-shadow: none;
+}
+:root:not([data-theme="dark"]) .neu-inset,
+:root:not([data-theme="dark"]) .field {
+  background: rgb(255 255 255 / 0.32);
+  border-color: rgb(255 255 255 / 0.5);
+  box-shadow: inset 1px 1px 3px rgb(40 10 110 / 0.12), inset -1px -1px 0 rgb(255 255 255 / 0.5);
+}
+:root:not([data-theme="dark"]) .neu .text-gradient {
+  background: linear-gradient(90deg, #5b21b6 0%, #be185d 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  filter: none;
+}
+
+/* Chart lines: light strokes lifted off the glass by a tight purple shadow */
+.flow-line .recharts-line-curve {
+  filter: drop-shadow(0 2px 3px rgb(60 10 130 / 0.45));
+}
+
+/* Scrollbars: just a slim rounded thumb, no grey track, no arrows. White on dark surfaces and on the glass;
+   translucent purple on the white light-mode page, where white would vanish. */
+:root {
+  --scroll-thumb: rgb(255 255 255 / 0.75);
+  --scroll-thumb-hover: rgb(255 255 255 / 0.95);
+}
+:root:not([data-theme="dark"]) {
+  --scroll-thumb: rgb(124 58 237 / 0.45);
+  --scroll-thumb-hover: rgb(124 58 237 / 0.7);
+}
+:root:not([data-theme="dark"]) .neu {
+  --scroll-thumb: rgb(255 255 255 / 0.85);
+  --scroll-thumb-hover: rgb(255 255 255 / 1);
+}
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+  background: transparent;
+}
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--scroll-thumb);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scroll-thumb-hover);
+  background-clip: padding-box;
+}
+/* Firefox (Chromium would ignore the ::-webkit rules above if these were applied there) */
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scroll-thumb) transparent;
+  }
+}
+
+/* Fella window: flies out of the round button to the centre, backdrop fades in, messages slide up one after another;
+   closing flies it back into the button. With reduced motion (e.g. Windows "Animation effects" off) the flight is
+   swapped for a short fade + zoom at the end of this file, so opening still reads as an animation. */
+@keyframes fella-overlay-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fella-overlay-out { from { opacity: 1; } to { opacity: 0; } }
+/* Starts as a button-sized disc exactly where the button is (--fly-x/--fly-y = offset from the screen centre, set on
+   open), arcs to the centre while growing, overshoots a touch, then settles. Content fades in once it has landed. */
+@keyframes fella-fly-in {
+  0% { transform: translate(var(--fly-x), var(--fly-y)) scale(0.08); border-radius: 50%; }
+  45% { transform: translate(calc(var(--fly-x) * 0.3), calc(var(--fly-y) * 0.62)) scale(0.36); border-radius: 40%; }
+  78% { transform: translate(0, 0) scale(1.025); border-radius: 32px; }
+  100% { transform: none; }
+}
+@keyframes fella-fly-out {
+  0% { transform: none; opacity: 1; }
+  55% { transform: translate(calc(var(--fly-x) * 0.3), calc(var(--fly-y) * 0.62)) scale(0.36); border-radius: 40%; opacity: 1; }
+  100% { transform: translate(var(--fly-x), var(--fly-y)) scale(0.08); border-radius: 50%; opacity: 0.4; }
+}
+@keyframes fella-content-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fella-msg-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.fella-overlay { animation: fella-overlay-in 220ms ease-out both; }
+.fella-overlay .fella-panel { animation: fella-fly-in 640ms cubic-bezier(0.3, 0.7, 0.2, 1) both; transform-origin: center; }
+.fella-overlay .fella-panel > * { animation: fella-content-in 220ms ease-out 420ms both; }
+.fella-overlay.is-closing { animation: fella-overlay-out 320ms ease-in both; }
+.fella-overlay.is-closing .fella-panel { animation: fella-fly-out 320ms cubic-bezier(0.5, 0, 0.75, 0.4) both; }
+.fella-overlay.is-closing .fella-panel > * { animation: fella-overlay-out 120ms ease-in both; }
+.fella-panel [aria-live] > * { animation: fella-msg-in 320ms ease-out both; }
+.fella-panel [aria-live] > *:nth-child(1) { animation-delay: 480ms; }
+.fella-panel [aria-live] > *:nth-child(2) { animation-delay: 530ms; }
+.fella-panel [aria-live] > *:nth-child(3) { animation-delay: 580ms; }
+.fella-panel [aria-live] > *:nth-child(4) { animation-delay: 630ms; }
+.fella-panel [aria-live] > *:nth-child(n + 5) { animation-delay: 680ms; }
+
+/* Month picker popup: drops in from its field */
+@keyframes picker-in { from { opacity: 0; transform: translateY(-6px) scale(0.97); } to { opacity: 1; transform: none; } }
+.month-picker { animation: picker-in 160ms ease-out both; transform-origin: top left; }
+.month-picker.origin-top-right { transform-origin: top right; }
+
+/* Popups that sit on top of another tile (the month picker): a glass layer inside glass can't blur what's behind it
+   (nested backdrop-filter), so these get a near-opaque fill in the same purple, keeping the bright rim. */
+.month-picker {
+  background:
+    radial-gradient(120% 80% at 0% 0%, rgb(255 255 255 / 0.28), rgb(255 255 255 / 0) 55%),
+    rgb(84 52 176 / 0.97);
+}
+:root:not([data-theme="dark"]) .month-picker {
+  background:
+    radial-gradient(120% 80% at 0% 0%, rgb(255 255 255 / 0.5), rgb(255 255 255 / 0) 55%),
+    rgb(205 188 252 / 0.98);
+}
+
+/* Reduced motion: no flight across the screen, but still a gentle fade + zoom so Fella visibly opens and closes.
+   (!important + higher specificity to beat the global "durations to 0" rule.) */
+@keyframes fella-soft-in { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: none; } }
+@keyframes fella-soft-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: scale(0.96); } }
+@media (prefers-reduced-motion: reduce) {
+  .fella-overlay {
+    animation: fella-overlay-in 200ms ease-out both !important;
+  }
+  .fella-overlay .fella-panel {
+    animation: fella-soft-in 240ms ease-out both !important;
+  }
+  .fella-overlay.is-closing,
+  .fella-overlay.is-closing .fella-panel {
+    animation: fella-soft-out 200ms ease-in both !important;
+  }
+}
