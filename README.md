@@ -2,7 +2,12 @@
 
 AI mock interviews that adapt to your role, your resume and every answer you give. Built for Codefest.
 
-**Plan:** [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md) · **Pitch deck:** `Prepfella.pptx` · **Brand assets:** `logos/`
+**Plan:** [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md) · **How it works / demo prep:** [docs/DEMO_GUIDE.md](docs/DEMO_GUIDE.md) · **Pitch deck:** `Prepfella.pptx` · **Brand assets:** `logos/`
+
+## Run it
+
+After the one-time setup below: double-click `start.cmd` (or run `.\start.ps1`). It starts backend and frontend in one window
+and opens the browser; Ctrl+C stops both. `.\start.ps1 -Prod` serves a production build (use for demos), `-Reset` reseeds the demo data.
 
 ## Quick start (Windows)
 

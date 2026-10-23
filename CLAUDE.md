@@ -17,6 +17,7 @@ Hackathon project (Codefest, PS2 "AI-Powered Web Applications × Job Readiness")
 - LinkedIn blocks our IP (HTTP 999) after a burst of profile fetches; fetched profiles are cached a day in `backend/tmp/cache`. Before a demo, open the demo profiles once; the PDF upload is the fallback.
 - LinkedIn's logged-out page blurs job titles/companies (`*******`) and omits job dates, so a link import only gets education; the import returns `hidden_jobs` and the dialog asks for the PDF export, which has everything.
 - Dev loop: `uvicorn` has no `--reload` here; restart it after backend edits. Delete `backend/prepfella.db` to reset demo data (reseeds on start).
+- Start both servers with `start.ps1` (`-Prod`, `-Reset`); on Rounak's laptop `run prep` (`~\.local\bin\run.cmd`) calls it. `docs/DEMO_GUIDE.md` explains the internals for demo prep: keep it in sync when behaviour changes.
 
 ## Conventions
 - Windows machine; Bash and PowerShell both available. Run Python via `.venv\Scripts\python`.

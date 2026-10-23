@@ -39,7 +39,7 @@ export default function LoginPage() {
         <div className="flex flex-col gap-5">
           {error && <p className="neu-inset rounded-2xl p-4 text-sm text-[var(--danger)]">{error}</p>}
           {!users && !error &&
-            [0, 1, 2].map((i) => <div key={i} className="neu h-[84px] animate-pulse rounded-3xl opacity-60" />)}
+            [0, 1, 2].map((i) => <div key={i} className="neu h-20 animate-pulse rounded-3xl opacity-60" />)}
           {users?.map((u) => (
             <button
               key={u.id}
@@ -50,10 +50,7 @@ export default function LoginPage() {
               <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-[image:var(--primary-gradient)] text-lg font-semibold text-white">
                 {u.name[0]}
               </span>
-              <span className="min-w-0 flex-1">
-                <span className="block font-semibold">{u.name}</span>
-                <span className="block truncate text-sm text-[var(--muted)]">{u.tagline}</span>
-              </span>
+              <span className="min-w-0 flex-1 truncate font-semibold">{u.name}</span>
               <ArrowRight size={18} className="text-[var(--muted)] transition group-hover:translate-x-0.5 group-hover:text-[var(--primary)]" />
             </button>
           ))}
